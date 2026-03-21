@@ -6,6 +6,30 @@
 
 This repo contains the official implementation for the paper "2D Gaussian Splatting for Geometrically Accurate Radiance Fields". Our work represents a scene with a set of 2D oriented disks (surface elements) and rasterizes the surfels with [perspective correct differentiable raseterization](https://colab.research.google.com/drive/1qoclD7HJ3-o0O1R8cvV3PxLhoDCMsH8W?usp=sharing). Our work also develops regularizations that enhance the reconstruction quality. We also devise meshing approaches for Gaussian splatting.
 
+## Fork Changes
+
+> [!IMPORTANT]
+> This section documents additions in this fork (not in upstream).
+
+This fork adds **depth-supervised training** for 2DGS.
+
+- New training arg: `-d/--depths` to load per-image depth maps.
+- New depth loss schedule args: `--depth_l1_weight_init`, `--depth_l1_weight_final`.
+- Added camera-side depth reliability handling and masking.
+- Added COLMAP depth alignment support via `depth_params.json`.
+- Added utility script: `utils/make_depth_scale.py`.
+
+Quick usage:
+
+```bash
+python utils/make_depth_scale.py --base_dir <scene_root> --depths_dir <depth_map_dir>
+python train.py -s <scene_root> -d <depth_folder_relative_to_scene_root>
+```
+
+Notes:
+- If using `-d` on COLMAP scenes, `<scene_root>/sparse/0/depth_params.json` is required.
+- Higher `depth_l1_weight_final` gives stronger late-stage geometry constraint; lower is safer for noisy depth priors.
+
 
 ## ⭐ New Features 
 - 2025/12/19: Our work is featured in an in-depth blog post on [LearnOpenCV](https://learnopencv.com/)! Thanks to [Shubham Anand](https://www.linkedin.com/in/shubham-anand-91a10b211/).
@@ -72,16 +96,27 @@ git clone https://github.com/hbb1/2d-gaussian-splatting.git --recursive
 conda env create --file environment.yml
 conda activate surfel_splatting
 ```
+
 ## Training
 To train a scene, simply use
 ```bash
 python train.py -s <path to COLMAP or NeRF Synthetic dataset>
+```
+To enable depth regularization, set the depth folder (relative to dataset root):
+```bash
+python train.py -s <path to COLMAP dataset> -d <path to depth maps>
+```
+For real-world datasets, also generate `depth_params.json` under `<path>/sparse/0/`:
+```bash
+python utils/make_depth_scale.py --base_dir <path to colmap> --depths_dir <path to generated depths>
 ```
 Commandline arguments for regularizations
 ```bash
 --lambda_normal  # hyperparameter for normal consistency
 --lambda_distortion # hyperparameter for depth distortion
 --depth_ratio # 0 for mean depth and 1 for median depth, 0 works for most cases
+--depth_l1_weight_init  # initial weight of depth supervision
+--depth_l1_weight_final # final weight of depth supervision
 ```
 **Tips for adjusting the parameters on your own dataset:**
 - For unbounded/large scenes, we suggest using mean depth, i.e., ``depth_ratio=0``,  for less "disk-aliasing" artifacts.
