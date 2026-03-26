@@ -1,10 +1,15 @@
 import argparse
 import json
 import os
+import sys
 
 import cv2
 import numpy as np
 from joblib import Parallel, delayed
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 from scene.colmap_loader import read_extrinsics_binary, read_extrinsics_text, read_intrinsics_binary, read_intrinsics_text, qvec2rotmat
 
